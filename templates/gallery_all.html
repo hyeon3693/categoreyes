@@ -1,0 +1,12 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>갤러리</title>
+</head>
+<body>
+    <h1>전체 사진</h1>
+    {% for image in images %}
+        <img src="{{ url_for('static', path='images/' + image) }}" alt="{{ image }}">
+    {% endfor %}
+</body>
+</html>

@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>갤러리</title>
+</head>
+<body>
+    <h1>분리된 사진</h1>
+    {%for table in table_names%}
+    <form action="/gallery/{{ table }}" method="get">
+        <button type="submit">{{ table }}</button>
+    </form>
+    {%endfor%}
+    <br>
+    
+</body>
+</html>
