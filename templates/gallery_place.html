@@ -1,10 +1,10 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>기타 갤러리</title>
+    <title>공간 갤러리</title>
 </head>
 <body>
-    <h1>기타 갤러리</h1>
+    <h1>공간 갤러리</h1>
     {% for image in file_names %}
         <img src="{{ url_for('static', path='images/upload/' + image) }}" alt="{{ image }}">
     {% endfor %}

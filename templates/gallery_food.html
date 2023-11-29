@@ -5,8 +5,9 @@
 </head>
 <body>
     <h1>음식 갤러리</h1>
-    {% for image in images %}
-        <img src="{{ url_for('static', path='images/' + image) }}" alt="{{ image }}">
+    {% for image in file_names %}
+        <img src="{{ url_for('static', path='images/upload/' + image) }}" alt="{{ image }}">
     {% endfor %}
+
 </body>
 </html>

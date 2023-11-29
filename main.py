@@ -39,11 +39,47 @@ images = Table(
     Column('filename', String(255), nullable=False)
 )
 
+animal = Table(
+    'animal', metadata,
+    Column('id', Integer, primary_key=True),
+    Column('filename', String(255), nullable=False)
+)
+
+etc = Table(
+    'etc', metadata,
+    Column('id', Integer, primary_key=True),
+    Column('filename', String(255), nullable=False)
+)
+
+food = Table(
+    'food', metadata,
+    Column('id', Integer, primary_key=True),
+    Column('filename', String(255), nullable=False)
+)
+
+human = Table(
+    'human', metadata,
+    Column('id', Integer, primary_key=True),
+    Column('filename', String(255), nullable=False)
+)
+
+nature = Table(
+    'nature', metadata,
+    Column('id', Integer, primary_key=True),
+    Column('filename', String(255), nullable=False)
+)
+
+place = Table(
+    'place', metadata,
+    Column('id', Integer, primary_key=True),
+    Column('filename', String(255), nullable=False)
+)
+
 metadata.create_all(engine)
 
-upload_folder = "uploads"
-if not os.path.exists(upload_folder):
-    os.makedirs(upload_folder)
+images_folder = "static/images/upload"
+if not os.path.exists(images_folder):
+    os.makedirs(images_folder)
 
 # ----------------------------------------
 
@@ -53,18 +89,16 @@ app.mount("/static", StaticFiles(directory="static"), name="static")
 
 # Use Jinja2Templates for HTML templates
 templates = Jinja2Templates(directory="templates")
-
 def get_image_files():
-    image_folder = 'static/images'
-    if os.path.exists(image_folder) and os.path.isdir(image_folder):
-        images = [file for file in os.listdir(image_folder) if file.lower().endswith(('.png', '.jpg', '.jpeg', '.gif', '.bmp'))]
+    if os.path.exists(images_folder) and os.path.isdir(images_folder):
+        images = [file for file in os.listdir(images_folder) if file.lower().endswith(('.png', '.jpg', '.jpeg', '.gif', '.bmp'))]
         return images
     return []
 
 # def get_food_images():
-#     image_folder = 'static/images'
-#     if os.path.exists(image_folder) and os.path.isdir(image_folder):
-#         images = [file for file in os.listdir(image_folder) if file.lower().endswith(('.png', '.jpg', '.jpeg', '.gif', '.bmp')) and file.lower().startswith(('f'))]
+#     images_folder = 'static/images'
+#     if os.path.exists(images_folder) and os.path.isdir(images_folder):
+#         images = [file for file in os.listdir(images_folder) if file.lower().endswith(('.png', '.jpg', '.jpeg', '.gif', '.bmp')) and file.lower().startswith(('f'))]
 #         return images
 #     return []
 
@@ -108,6 +142,16 @@ def get_nature_filenames():
     finally:
         db.close()
 
+def get_place_filenames():
+    db = engine.connect()
+    try:
+        query = text("SELECT filename FROM place")
+        result = db.execute(query).fetchall()
+        file_names = [row[0] for row in result]
+        return file_names
+    finally:
+        db.close()
+
 def get_etc_filenames():
     db = engine.connect()
     try:
@@ -119,9 +163,8 @@ def get_etc_filenames():
         db.close()
 
 def get_all_images():
-    image_folder = 'static/images'
-    if os.path.exists(image_folder) and os.path.isdir(image_folder):
-        images = [file for file in os.listdir(image_folder) if file.lower().endswith(('.png', '.jpg', '.jpeg', '.gif', '.bmp'))]
+    if os.path.exists(images_folder) and os.path.isdir(images_folder):
+        images = [file for file in os.listdir(images_folder) if file.lower().endswith(('.png', '.jpg', '.jpeg', '.gif', '.bmp'))]
         return images
     return []
 
@@ -218,11 +261,8 @@ def seperate_category():
         result = db.execute(images.select()).fetchall()
         # image_data = [{'id': row.id, 'filename': row.filename} for row in result]
         image_data = [row.filename for row in result]
-        print('image_data :', image_data)
     finally:
         db.close()
-
-    images_folder = "static/images"
 
     # Get a list of all image files in the folder
     # image_files = [f for f in os.listdir(images_folder) if os.path.isfile(os.path.join(images_folder, f))]
@@ -258,7 +298,6 @@ def seperate_category():
         "photo of places and strudtures": "place",
         "a photo of documents": "documents",
     }
-    print('image_files :', image_files, len(image_files))
     # Loop through each image file
     for image_file in image_files:
         # Create the full path to the image
@@ -302,14 +341,15 @@ def seperate_category():
                 db.commit()
             finally:
                 db.close()
-        
-    print('images_obj: ', images_obj)
-
-
     return []
 
 def get_table_names():
-    table_names = metadata.tables.keys()
+    # table_names = metadata.tables.keys()
+    table_names = [
+        table_name
+        for table_name, table in metadata.tables.items()
+        if table is not None and SessionLocal().execute(table.select().limit(1)).first() is not None
+    ]
     return list(table_names)
 
 
@@ -335,14 +375,32 @@ async def read_main(request: Request):
 
 @app.post("/upload")
 async def create_upload_file(request: Request, files: List[UploadFile] = File(...)):
+    print(1234)
+    # Delete all image files in the 'images' folder
+    for filename in os.listdir(images_folder):
+        file_path = os.path.join(images_folder, filename)
+        try:
+            if os.path.isfile(file_path):
+                os.unlink(file_path)
+        except Exception as e:
+            print(f"Error deleting file {file_path}: {e}")
+
+    db = SessionLocal()
+    db.execute(images.delete())
+    db.execute(animal.delete())
+    db.execute(etc.delete())
+    db.execute(food.delete())
+    db.execute(human.delete())
+    db.execute(nature.delete())
+    db.execute(place.delete())
+            
     for file in files:
         contents = await file.read()
-        file_path = os.path.join(upload_folder, file.filename)
+        file_path = os.path.join(images_folder, file.filename)
 
         with open(file_path, "wb") as f:
             f.write(contents)
 
-        db = SessionLocal()
         try:
             db.execute(images.insert().values(filename=file.filename))
             db.commit()
@@ -382,6 +440,11 @@ async def read_human_images(request: Request):
 async def read_nature_images(request: Request):
     file_names = get_nature_filenames()
     return templates.TemplateResponse("gallery_nature.html", {"request": request, "file_names": file_names})
+
+@app.get("/gallery/place", response_class=HTMLResponse)
+async def read_place_images(request: Request):
+    file_names = get_place_filenames()
+    return templates.TemplateResponse("gallery_place.html", {"request": request, "file_names": file_names})
 
 @app.get("/gallery/etc", response_class=HTMLResponse)
 async def read_etc_images(request: Request):
